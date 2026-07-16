@@ -1,0 +1,58 @@
+bundle:
+  name: mi_proyecto_dab
+
+# 1. Variables Globales
+variables:
+  catalog_name:
+    default: "dab_1_dev"
+
+# 2. Configuración de Entornos (Targets) con HOST explícito
+targets:
+  dev:
+    default: true
+    variables:
+      catalog_name: "dab_1_dev"
+    workspace:
+      host: https://dbc-77b2401c-4344.cloud.databricks.com
+
+  stage:
+    variables:
+      catalog_name: "dab_2_stage"
+    workspace:
+      # Aquí iría la URL de tu Workspace de Staging
+      host: https://dbc-77b2401c-4344.cloud.databricks.com 
+
+  prod:
+    variables:
+      catalog_name: "dab_3_prod"
+    workspace:
+      # Aquí iría la URL de tu Workspace de Producción
+      host: https://dbc-77b2401c-4344.cloud.databricks.com
+
+# 3. Definición de Recursos (El Job)
+resources:
+  jobs:
+    job_reconciliacion:
+      name: "demo1_simple_dab_ui_${var.catalog_name}"
+      
+      tasks:
+        - task_key: "create_bronze_table"
+          notebook_task:
+            notebook_path: "./src/create_bronze_table.ipynb"
+            base_parameters:
+              catalog: ${var.catalog_name}
+
+        - task_key: "create_silver_table"
+          depends_on:
+            - task_key: "create_bronze_table"
+          notebook_task:
+            notebook_path: "./src/create_silver_table.ipynb"
+            base_parameters:
+              catalog: ${var.catalog_name}
+
+      # Estos parámetros son los que el profesor tenía al final de su imagen
+      parameters:
+        - name: "display_target"
+          default: "development"
+        - name: "catalog_name"
+          default: ${var.catalog_name}
